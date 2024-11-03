@@ -148,8 +148,8 @@ svg_cmd_warn() {
 
 svg_create_vg() {
   local OPT OPTARG OPTIND
-  local usage vgname devs metadatasize
-  usage="${FUNCNAME} <-v vgname> <-d LUNS> [-m metadatasize]"
+  local usage vgname devs metadatasize opts
+  usage="${FUNCNAME} <-v vgname> <-d LUNS> [-o opts] [-m metadatasize]"
 
   while getopts 'v:d:m:h' OPT; do
     case $OPT in
@@ -157,10 +157,13 @@ svg_create_vg() {
       vgname="$OPTARG"
       ;;
     d)
-      luns="$OPTARG"
+      devs="$OPTARG"
       ;;
     m)
       metadatasize="$OPTARG"
+      ;;
+    o)
+      opts="$OPTARG"
       ;;
     ? | h)
       wlog_error ${usage}
@@ -186,47 +189,17 @@ svg_create_vg() {
     svg_cmd_exit "lvmdevices --devicesfile $vgname --adddev $dev"
   done
 
-  svg_cmd_exit "vgcreate --shared $vgname ${devs} --config global/sanlock_align_size=2 --metadatasize ${metadatasize}"
+  svg_cmd_exit "vgcreate --shared $vgname ${devs} --config global/sanlock_align_size=2 --metadatasize ${metadatasize} ${opts}"
 
   svg_cmd_exit "vgchange --devicesfile $vgname --lock-start"
   svg_cmd_exit "vgs --devicesfile $vgname $vgname"
   svg_cmd_exit "vgdisplay --devicesfile $vgname -C -o name,mda_size,mda_free $vgname"
 
-  # idx=0
-
-  # for dev in ${devs}; do
-  #   echo $dev
-  #   vg_idx=$((idx % NUM_VG))
-  #   vgname=${VG_NAME}${vg_idx}
-  #   let idx+=1
-  #   VG_DEVS[$vg_idx]="${VG_DEVS[$vg_idx]} $dev"
-
-  #   #    lunsize=$(lsblk -nd $dev -b | awk '{print $4}')
-  #   #    ((lunsize = lunsize / 1024 / 1024)) # Unit M
-  #   #
-  #   #    echo "Lun lunsize:$lunsize"
-  #   #    #svg_cmd_exit "pvcreate --config global/use_lvmlockd=0 --metadatasize 64m  $devs"
-  #   svg_cmd_exit "lvmdevices --devicesfile $vgname --adddev $dev"
-  # done
-
-  # for ((idx = 0; idx < NUM_VG; idx++)); do
-  #   vgname=${VG_NAME}${idx}
-  #   devs=${VG_DEVS[$idx]}
-  #   if vgs --devicesfile $vgname $vgname; then
-  #     wlog_warn "Already exist $vgname,skip creating $vgname"
-  #   else
-  #     svg_cmd_exit "vgcreate --shared $vgname ${devs} --config global/sanlock_align_size=2 --metadatasize ${metadatasize}"
-  #   fi
-  #   svg_cmd_exit "vgchange --devicesfile $vgname --lock-start"
-  #   svg_cmd_exit "vgs --devicesfile $vgname $vgname"
-  #   svg_cmd_exit "vgdisplay --devicesfile $vgname -C -o name,mda_size,mda_free $vgname"
-  # done
-
 }
 
 svg_del_vg() {
   local OPT OPTARG OPTIND
-  local usage dev vgname idx usage
+  local usage vgname devs dev
   usage="${FUNCNAME} <-v vgname> "
 
   while getopts 'v:h' OPT; do
@@ -275,167 +248,6 @@ svg_del_vg() {
   fi
   rm -rf /etc/lvm/devices/${vgname}
 
-  #========================
-  # for ((idx = 0; idx < NUM_VG; idx++)); do
-  #   vgname=${VG_NAME}${idx}
-  #   devs=${VG_DEVS[$idx]}
-
-  #   if vgs --devicesfile $vgname $vgname; then
-  #     dev=$(
-  #       pvs --devicesfile $vgname | awk -v vgname="$vgname" '{if ($2 == vgname) { print $1 }} '
-  #     )
-  #     echo $dev
-  #     svg_cmd_warn "vgchange -an $vgname --devicesfile $vgname"
-  #     svg_cmd_warn "vgremove -ff $vgname --devicesfile $vgname"
-  #     #    if [ $? -ne 0 ] ;then
-  #     #     svg_cmd_warn "vgchange --lockstop --devicesfile $vgname"
-  #     #    fi
-  #   fi
-
-  #   if [[ "$dev" != "" ]]; then
-  #     :
-  #     svg_cmd_warn "lvmdevices --deldev $dev"
-
-  #     #svg_cmd_warn "yes|pvremove --devicesfile $vgname -ff --config global/use_lvmlockd=0 $dev"
-  #     #svg_cmd_exit "lvmdevices --devicesfile $vgname --deldev $dev"
-  #   fi
-
-  # done
-
-}
-
-# svg_calc() {
-#   ((poolsize = lunsize - remain_lunsize))
-#   ((num = poolsize / lvunit))
-#   echo $num $lvnum
-#   [[ "$lvnum" == "" ]] || ((num = num > lvnum ? lvnum : num))
-#   echo "poolsize=$poolsize lvunit=$lvunit num=$num"
-
-# }
-
-#svg_test_lv_one_pool() {
-#  local active
-#  svg_calc
-#  svg_cmd_exit "lvcreate --devicesfile $vgname --type thin-pool -L ${poolsize}M -n $lvpoolname $vgname "
-#  [[ "$1" == "" ]] && active=1 || active=$1
-#
-#  for r in $(seq $repeat); do
-#    for i in $(seq $num); do
-#      iter_lvname="${lvname}$i"
-#      echo "repeat:$r $i/$num ${iter_lvname}"
-#      svg_cmd_exit "lvcreate --devicesfile $vgname --type thin -V ${lvunit}M -n ${iter_lvname} --thinpool $lvpoolname $vgname"
-#      if [[ "$active" == "1" ]];then
-#        svg_cmd_exit "mkfs.ext4 /dev/${vgname}/${iter_lvname} > /dev/null"
-#      else
-#        #deactive
-#        svg_cmd_exit "lvchange --devicesfile $vgname --activate n /dev/${vgname}/${iter_lvname}"
-#      fi
-#    done
-#    svg_del_lv
-#  done
-#
-#}
-
-svg_loop_test() {
-  local OPT OPTARG OPTIND
-  local usage start_time end_time func start num reset_global
-  usage="$FUNCNAME <-e FUNC> <-n NUMBER> [-s START] [-r reset_global] [ -f count file]"
-
-  while getopts 'e:n:s:r:f:h' OPT; do
-    case $OPT in
-    e)
-      func="$OPTARG"
-      echo "wq:$func"
-      ;;
-    n)
-      num="$OPTARG"
-      ;;
-    s)
-      start="$OPTARG"
-      ;;
-    r)
-      reset_global="$OPTARG"
-      ;;
-    f)
-      count_file="$OPTARG"
-      ;;
-    ? | h)
-      wlog_error ${usage}
-      return 1
-      ;;
-    esac
-  done
-
-  count_file=${count_file:-${COUNT_FILE}}
-  num=${num:-${NUM_LV}}
-  start=${start:-0}
-  reset_global=${reset_global:-0}
-
-  if [ -z "${func}" ] || [ -z "${num}" ]; then
-    wlog_error "${usage}, Miss parameter !"
-    return 1
-  fi
-  # Need reset count file
-  if [[ "$reset_global" == "1" ]] && [ -n "${count_file}" ]; then
-    svg_cmd "echo 0 > ${count_file}"
-  fi
-  g_idx=0
-  start_time=$(date +%s)
-  for ((i = start; i < num + start; i++)); do
-    # echo "$i $func"
-    if [ -n "${count_file}" ]; then
-      g_idx=$(cat ${count_file})
-      # svg_cmd "echo $((g_idx + 1)) > ${count_file};"
-      echo $((g_idx + 1)) > ${count_file};
-    fi
-    # svg_cmd_exit "$func -g $g_idx -i $i"
-    eval "$func -g $g_idx -i $i"
-  done
-  end_time=$(date +%s)
-  wlog_info "Loop Test $func $num from $start Time: $((end_time - start_time))"
-
-}
-
-svg_create_lv() {
-  # native function, should call
-  local OPT OPTARG OPTIND
-  local usage vgname lvname poolname g_idx l_idx
-  usage="${FUNCNAME} <-v vgname> <-g global_idx> [-i local_idx]"
-
-  while getopts 'v:l:p:g:i:h' OPT; do
-    case $OPT in
-    v)
-      vgname="$OPTARG"
-      ;;
-    l)
-      lvname="$OPTARG"
-      ;;
-    p)
-      poolname="$OPTARG"
-      ;;
-    g)
-      g_idx="$OPTARG"
-      ;;
-    i)
-      i_idx="$OPTARG"
-      ;;
-    ? | h)
-      echo "wq:er"
-      wlog_error ${usage}
-      # return 1
-      ;;
-    esac
-  done
-
-  vgname=${vgname:-${VG_NAME}}
-  lvname=${lvname:-${LV_NAME}}"-${g_idx}"
-  poolname=${poolname:-${POOL_NAME}}"-${g_idx}"
-
-
-  echo "${vgname} ${lvname} ${poolname}"
-  #  lvcreate --devicesfile ${vgname} --type thin -V 2G -n ${lvname}  --thinpool ${poolname} ${vgname}
-  svg_cmd_warn "lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${lvname} --thinpool ${poolname} -an --devicesfile ${vgname} ${vgname}" "${FUNCNAME} ${lvname}"
-  #lvcreate -L ${UNIT_LV}M -V ${UNIT_LV}M -n ${lvname} --thinpool ${poolname} -an --devicesfile ${vgname} ${vgname}
 }
 
 svg_del_lvs() {
@@ -471,7 +283,6 @@ svg_del_lvs() {
     return 1
   fi
 
-  #  vgname=$1
   wlog_info "Ready delete ${lvname} and ${poolname} in ${vgname}"
   mylvs=$(lvs --devicesfile $vgname | awk '{print $1}' | grep -E ${lvname}-[0-9]*)
   for mylv in $mylvs; do
@@ -486,43 +297,112 @@ svg_del_lvs() {
 
 }
 
-#svg_test_lv_multi_pool() {
-#  local active
-##  svg_calc
-#  [[ "$1" == "" ]] && active=${ACTIVE} || active=$1
-#  for r in $(seq ${REPEAT}); do
-#    for i in $(seq ${NUM_LV}); do
-#      iter_lvname="${lvname}-$i"
-#      iter_lvpoolname="${lvpoolname}-$i"
-#      echo "repeat:$r $i/$num $iter_lvpoolname ${iter_lvname}"
-#      svg_cmd_exit "lvcreate --devicesfile $vgname --type thin-pool -L ${lvunit}M -n $iter_lvpoolname $vgname "
-#      svg_cmd_exit "lvcreate --devicesfile $vgname --type thin -V ${lvunit}M -n ${iter_lvname} --thinpool ${iter_lvpoolname} $vgname"
-#      #active
-#      if [[ "$active" == "1" ]];then
-#        svg_cmd_exit "mkfs.ext4 /dev/${vgname}/${iter_lvname} > /dev/null"
-#      else
-#        #deactive
-#        svg_cmd_exit "lvchange -an /dev/${vgname}/${iter_lvname} --devicesfile $vgname"
-#        svg_cmd_exit "lvchange -an /dev/${vgname}/${iter_lvpoolname} --devicesfile $vgname"
-#      fi
-#      if [[ "${nfs_file}" != "" ]];then
-#        let g_idx=`cat ${nfs_file}`+1;
-#        wlog_info "Global idx $g_idx"
-#        svg_cmd "echo $g_idx > ${nfs_file};"
-#      fi
-#      sleep 1
-#    done
-#    svg_del_lv
-#  done
-#
-#}
-svg_test_lv_new(){
-  local OPT OPTARG OPTIND
-  local usage vgname num start reset_global cycle
-  usage="${FUNCNAME} <-v vgname> <-n num> [-s start] [-r reset_global] [-c cycle]"
+_write_stg_file() {
+  # write stage result into file
+  # usage: time funcname
+  local file=${LOG_FOLDER}/$2_${TEST_NAME}.stg
+  local curren_time last_time
+  current_time=$(date +%s)
+  if [ -e $file ]; then
+    last_time=$(tail -n 1 $file | cut -f 2 -d ":")
+    time=$((current_time - last_time))
+    svg_cmd "echo $1 :${current_time} : ${time} |tee -a $file"
+  else
+    svg_cmd "echo $1 :${current_time} : 0|tee -a $file"
+  fi
+}
 
-  while getopts 'v:n:s:r:c:h' OPT; do
+_write_time_file() {
+  # usage: time funcname
+  local file="${LOG_FOLDER}/$2_$vgname_${WORKER}_${num}_${start}-$((start + num)).time"
+  svg_cmd "echo $1 : $(date '+%m-%d %H:%M:%S') > $file"
+}
+
+# svg_create_lv() {
+#   local OPT OPTARG OPTIND
+#   local usage vgname num start reset_count count_file opts
+#   usage="${FUNCNAME} <-v vgname> <-n num> [-s start] [-o opts]  [-c count_file] [-r reset_count] [-u unit_stage]"
+
+#   while getopts 'v:n:s:r:c:o:u:h' OPT; do
+#     case $OPT in
+#     v)
+#       vgname="$OPTARG"
+#       ;;
+#     n)
+#       num="$OPTARG"
+#       ;;
+#     s)
+#       start="$OPTARG"
+#       ;;
+#     r)
+#       reset_count="$OPTARG"
+#       ;;
+#     c)
+#       count_file="$OPTARG"
+#       ;;
+#     o)
+#       opts="$OPTARG"
+#       ;;
+#     u)
+#       unit_stage="$OPTARG"
+#       ;;
+#     ? | h)
+#       wlog_error ${usage}
+#       return 1
+#       ;;
+#     esac
+#   done
+
+#   vgname=${vgname:-${VG_NAME}}
+#   num=${num:-$NUM_LV}
+#   start=${start:-0}
+#   reset_count=${reset_count:-0}
+#   count_file=${count_file:-${COUNT_FILE}}
+#   unit_stage=${unit_stage:-${UNIT_STAGE}}
+#   opts=${opts:-"-ay"}
+
+#   if [ -z "${vgname}" ] || [ -z "${num}" ] || [ -z "${count_file}" ]; then
+#     wlog_error "${usage}, Miss parameter !"
+#     return 1
+#   fi
+
+#   if [ "${reset_count}" == "1" ]; then
+#     svg_cmd_exit "echo 0 > ${count_file}"
+#   fi
+
+#   wlog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
+#   start_time=$(date +%s)
+#   err_count=0
+#   for ((i = 0; i < num; i++)); do
+#     idx=$((start + i))
+#     g_idx=$(cat ${count_file})
+#     svg_cmd "echo $((g_idx + 1)) > ${count_file};"
+#     svg_cmd_warn "lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}"
+#     [ $? == 0 ] || ((err_count++))
+#     ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${FUNCNAME}
+#   done
+#   end_time=$(date +%s)
+#   t=$((end_time - start_time))
+#   _write_time_file $t ${FUNCNAME}
+#   _write_stg_file $g_idx ${FUNCNAME}
+#   wlog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
+
+# }
+
+svg_loop_test() {
+  local OPT OPTARG OPTIND
+  local usage vgname num start reset_count count_file opts
+  local funcname action cmd
+  usage="${FUNCNAME} <-f funcname> <-a action> <-v vgname> <-n num> [-s start] [-o opts]  [-c count_file] [-r reset_count] [-u unit_stage]"
+
+  while getopts 'a:f:v:n:s:r:c:o:u:h' OPT; do
     case $OPT in
+    f)
+      funcname="$OPTARG"
+      ;;
+    a)
+      action="$OPTARG"
+      ;;
     v)
       vgname="$OPTARG"
       ;;
@@ -533,10 +413,16 @@ svg_test_lv_new(){
       start="$OPTARG"
       ;;
     r)
-      reset_global="$OPTARG"
+      reset_count="$OPTARG"
       ;;
     c)
-      cycle="$OPTARG"
+      count_file="$OPTARG"
+      ;;
+    o)
+      opts="$OPTARG"
+      ;;
+    u)
+      unit_stage="$OPTARG"
       ;;
     ? | h)
       wlog_error ${usage}
@@ -545,60 +431,141 @@ svg_test_lv_new(){
     esac
   done
 
+  funcname=${funcname:-"undef"}
+  action=${action:-}
   vgname=${vgname:-${VG_NAME}}
   num=${num:-$NUM_LV}
   start=${start:-0}
-  reset_global=${reset_global:-0}
-  cycle=${cycle:-1}
+  reset_count=${reset_count:-0}
+  count_file=${count_file:-${LOG_FOLDER}/${funcname}.idx}
+  unit_stage=${unit_stage:-${UNIT_STAGE}}
+  opts=${opts:-""}
 
-  if [ -z "${vgname}" ] || [ -z "${num}" ]; then
+  wlog_info "action:$action"
+  if [ -z "${vgname}" ] || [ -z "${num}" ] || [ -z "${count_file}" ]; then
     wlog_error "${usage}, Miss parameter !"
     return 1
   fi
-  unit_cycle=$((num/cycle))
-  count_file=${count_file:-${COUNT_FILE}}
-  #split to smaller loop number
+
+  if [ "${reset_count}" == "1" ] || [ ! -e ${count_file} ]; then
+    svg_cmd_exit "echo 0 > ${count_file}"
+  fi
+
   wlog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
   start_time=$(date +%s)
   err_count=0
-  for ((i=0;i<num;i++));do
-  idx=$((start+i))
-  g_idx=$(cat ${count_file})
-  svg_cmd "echo $((g_idx + 1)) > ${count_file};"
-  # svg_create_lv -v $vgname -g $idx
-  svg_cmd_warn "lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} -an --devicesfile ${vgname} ${vgname}"
-  [ $? == 0 ] || $((err_count++))
-  # lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} -an --devicesfile ${vgname} ${vgname}
+  for ((i = 0; i < num; i++)); do
+    idx=$((start + i))
+    g_idx=$(cat ${count_file})
+    svg_cmd "echo $((g_idx + 1)) > ${count_file};"
+    cmd="$(eval echo $action)"
+    svg_cmd_warn "${cmd}"
+    [ $? == 0 ] || ((err_count++))
+    ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${funcname}
   done
   end_time=$(date +%s)
   t=$((end_time - start_time))
-  echo $t > ${LOG_FOLDER}/${FUNCNAME}.$vgname.${WORKER}.${num}.${start}-$((start=num)).t
-  wlog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
-  # svg_loop_test "svg_create_lv ${vgname}" ${num} ${start} ${reset_global}
+  _write_time_file $t ${funcname}
+  _write_stg_file $g_idx ${funcname}
+  wlog_info "Loop end ${funcname} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
+  return $((err_count == 0 ? 0 : 1))
 
 }
 
-svg_test_lv() {
-  local OPT OPTARG OPTIND
-  local usage vgname num start reset_global
-  usage="${FUNCNAME} <-v vgname> <-n num> [-s start] [-r reset_global] [-u unit_cycle]"
+svg_lv_create() {
+  action='lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}'
+  svg_loop_test -f lvcreate -a "$action" $@
+}
 
-  while getopts 'v:n:s:r:u:h' OPT; do
+svg_lv_change() {
+  action='lvchange ${vgname}/${LV_NAME}-${idx} ${opts} --devicesfile ${vgname} '
+  svg_loop_test -f lvchange -a "$action" $@
+}
+
+svg_lv_extend() {
+  action='lvextend -L+100M  ${vgname}/${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname}'
+  svg_loop_test -f lvextend -a "$action" $@
+}
+# svg_change_lv() {
+#   local OPT OPTARG OPTIND
+#   local usage vgname num start reset_count count_file opts
+#   usage="${FUNCNAME} <-v vgname> <-n num> [-s start] [-o opts]  [-c count_file] [-r reset_count] [-u unit_stage]"
+
+#   while getopts 'v:n:s:r:c:o:u:h' OPT; do
+#     case $OPT in
+#     v)
+#       vgname="$OPTARG"
+#       ;;
+#     n)
+#       num="$OPTARG"
+#       ;;
+#     s)
+#       start="$OPTARG"
+#       ;;
+#     r)
+#       reset_count="$OPTARG"
+#       ;;
+#     c)
+#       count_file="$OPTARG"
+#       ;;
+#     o)
+#       opts="$OPTARG"
+#       ;;
+#     u)
+#       unit_stage="$OPTARG"
+#       ;;
+#     ? | h)
+#       wlog_error ${usage}
+#       return 1
+#       ;;
+#     esac
+#   done
+
+#   vgname=${vgname:-${VG_NAME}}
+#   num=${num:-$NUM_LV}
+#   start=${start:-0}
+#   reset_count=${reset_count:-0}
+#   count_file=${count_file:-${COUNT_FILE}}
+#   unit_stage=${unit_stage:-${UNIT_STAGE}}
+#   opts=${opts:-"-ay"}
+
+#   if [ -z "${vgname}" ] || [ -z "${num}" ] || [ -z "${count_file}" ]; then
+#     wlog_error "${usage}, Miss parameter !"
+#     return 1
+#   fi
+
+#   if [ "${reset_count}" == "1" ]; then
+#     svg_cmd_exit "echo 0 > ${count_file}"
+#   fi
+
+#   wlog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
+#   start_time=$(date +%s)
+#   err_count=0
+#   for ((i = 0; i < num; i++)); do
+#     idx=$((start + i))
+#     g_idx=$(cat ${count_file})
+#     svg_cmd "echo $((g_idx + 1)) > ${count_file};"
+#     svg_cmd_warn "lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}"
+#     [ $? == 0 ] || ((err_count++))
+#     ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${FUNCNAME}
+#   done
+#   end_time=$(date +%s)
+#   t=$((end_time - start_time))
+#   _write_time_file $t ${FUNCNAME}
+#   _write_stg_file $g_idx ${FUNCNAME}
+#   wlog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
+
+# }
+
+svg_del_all() {
+  local OPT OPTARG OPTIND
+  local usage vgname devs dev
+  usage="${FUNCNAME} <-v vgname> "
+
+  while getopts 'v:h' OPT; do
     case $OPT in
     v)
       vgname="$OPTARG"
-      ;;
-    n)
-      num="$OPTARG"
-      ;;
-    s)
-      start="$OPTARG"
-      ;;
-    r)
-      reset_global="$OPTARG"
-      ;;
-    u)
-      unit_cycle="$OPTARG"
       ;;
     ? | h)
       wlog_error ${usage}
@@ -608,35 +575,43 @@ svg_test_lv() {
   done
 
   vgname=${vgname:-${VG_NAME}}
-  num=${num:-$NUM_LV}
-  start=${start:0}
-  reset_global=${reset_global:-0}
-  unit_cycle=${unit_cycle:-10000}
 
-  if [ -z "${vgname}" ] || [ -z "${num}" ]; then
+  if [ -z "${vgname}" ]; then
     wlog_error "${usage}, Miss parameter !"
     return 1
   fi
-
-  #split to smaller loop number
-
-  for ((r = 0; r <= $((num / unit_cycle)); r++)); do
-    local remain=$((num - r * unit_cycle))
-    remain=$((reset > unit_cycle ? unit_cycle : remain))
-    svg_loop_test -e "svg_create_lv -v ${vgname}" -n ${remain} -s $((r * unit_cycle)) -r ${reset_global}
-  done
-  # svg_loop_test "svg_create_lv ${vgname}" ${num} ${start} ${reset_global}
-
+  svg_del_lvs -v ${vgname}
+  svg_del_vg -v ${vgname}
 }
 
+svg_reset_vg() {
+  local OPT OPTARG OPTIND
+  local usage vgname devs dev
+  usage="${FUNCNAME} <-v vgname> [-d devs]"
 
-#svg_test_lv_extend() {
-#  :
-#}
+  while getopts 'v:d:h' OPT; do
+    case $OPT in
+    v)
+      vgname="$OPTARG"
+      ;;
+    d)
+      devs="$OPTARG"
+      ;;
+    ? | h)
+      wlog_error ${usage}
+      return 1
+      ;;
+    esac
+  done
 
-svg_del_all() {
-  svg_del_lv
-  svg_del_vg
+  vgname=${vgname:-${VG_NAME}}
+
+  if [ -z "${vgname}" ]; then
+    wlog_error "${usage}, Miss parameter !"
+    return 1
+  fi
+  svg_del_vg -v ${vgname}
+  svg_create_vg -v ${vgname} -d "$devs"
 }
 
 svg_prune_vg() {
