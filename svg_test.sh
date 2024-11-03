@@ -1,14 +1,15 @@
 #!/bin/bash
 #set -x
-source svg_common.sh
 
-usage="$0 <-t testname> <-v vgname> <-d devname> <-s nfs> [-l logfolder] [-w worker] 
+WORK_PATH=$(dirname "${BASH_SOURCE[0]}")
+source ${WORK_PATH}/svg_common.sh
+
+usage="$0 <-t testname> <-v vgname> <-d devname> [-l logfolder] [-w worker] 
 [-i] [-u lvunit ] [-n lvnum ] [-m metasize]  [-e function]\n
 
 -t testname: The test name, log file and count file can be generated with this.
 -v vgname  : The VG name for testing.
 -d devname : The LNU devices name.
--s nfs : The local nfs folder, it is used to store test result.
 -l logfolder : The path of logfolder. can be generated automately.
 
 -w worker  : The worker node name. it helps to distinguish host resource
@@ -29,7 +30,6 @@ Example :
 #Default
 LUNS=/dev/sdb
 
-
 NUM_LV=5
 NUM_VG=1
 NUM_LUN=0
@@ -44,8 +44,8 @@ VG_NAME=ksvg
 POOL_NAME=kspool
 LV_NAME=kslv
 
-NFS_FOLDER=/var/tmp
-NFS_FOLDER=/home/vwrepo
+LOG_ROOTDIR=/var/tmp
+LOG_ROOTDIR=/home/vwrepo/kslog
 
 WORKER="h"$(cat /etc/lvm/lvmlocal.conf | grep -E "host_id.*=.*[0-9]" | cut -f 2 -d "=" | bc -l)
 
@@ -80,7 +80,7 @@ while getopts "ihdt::u:r:n:m:c:a:v:l:p:e:w:" opt; do
     FUNCRUN="$OPTARG"
     ;;
   s)
-    NFS_FOLDER="$OPTARG"
+    LOG_ROOTDIR="$OPTARG"
     ;;
   r)
     REPEAT="$OPTARG"
@@ -95,7 +95,7 @@ while getopts "ihdt::u:r:n:m:c:a:v:l:p:e:w:" opt; do
     ;;
   l)
     echo "$OPTARG"
-    LOG_FOLDER=$OPTARG
+    LOG_DIR=$OPTARG
     ;;
   ? | *)
     echo -e "$usage"
@@ -105,25 +105,29 @@ while getopts "ihdt::u:r:n:m:c:a:v:l:p:e:w:" opt; do
   esac
 done
 
+
+# Revise value
 TEST_NAME=${TEST_NAME:-${VG_NAME}}
+
 #Parameter priority : test name script>input > default
 # Load Test Name Parameter
 if [ -e ${TEST_NAME}.sh ] && [ -n ${ENABLE_SCRIPT} ]; then
-  source ${TEST_NAME}.sh
+  source ${WORK_PATH}/${TEST_NAME}.sh
 fi
 
-# Revise value
+
 UNIT_POOL=${UNIT_POOL:-${UNIT_LV}}
 
-if [ -n "$NFS_FOLDER" ]; then
-  LOG_FOLDER=${LOG_FOLDER:-${NFS_FOLDER}/kslog/${TEST_NAME}}
+if [ -n "$LOG_ROOTDIR" ]; then
+  LOG_DIR=${LOG_DIR:-${LOG_ROOTDIR}/${TEST_NAME}}
 fi
 
-if [ -z "${TEST_NAME}" ] || [ -z "${LOG_FOLDER}" ]; then
+if [ -z "${TEST_NAME}" ] || [ -z "${LOG_DIR}" ]; then
   echo -e "$usage"
   exit 1
 fi
-[[ -e ${LOG_FOLDER} ]] || mkdir -p ${LOG_FOLDER}
+
+[[ -e ${LOG_DIR} ]] || mkdir -p ${LOG_DIR}
 
 LV_NAME="${LV_NAME}-${WORKER}"
 POOL_NAME="${POOL_NAME}-${WORKER}"
@@ -136,14 +140,9 @@ done
 #   NUM_VG=${NUM_LUN}
 # fi
 
-if [ -z "${LOG_FILE}" ]; then
-  # LOG_FILE="${LOG_FOLDER}/kubesan-"$(date "+%F-%H%M").log
-  # LOG_FILE="${LOG_FOLDER}/${TEST_NAME}.log"
-  LOG_FILE="${LOG_FOLDER}/main.log"
-fi
-if [ -z "${COUNT_FILE}" ]; then
-  COUNT_FILE="${LOG_FOLDER}/main.idx"
-fi
+LOG_FILE=${LOG_FILE:-"${LOG_DIR}/main.log"}
+
+COUNT_FILE=${COUNT_FILE:-"${LOG_DIR}/main.idx"}
 
 [[ -e ${COUNT_FILE} ]] || {
   touch ${COUNT_FILE}
@@ -166,9 +165,10 @@ LV_NAME=${LV_NAME}
 VG_NAME=${VG_NAME}
 POOL_NAME=${POOL_NAME}
 METADATA_SIZE=${METADATA_SIZE}
-NFS_FOLDER=${NFS_FOLDER}
 INIT_FLAG=${INIT_FLAG}
 TEST_NAME=${TEST_NAME}
+LOG_ROOTDIR=${LOG_ROOTDIR}
+LOG_DIR=${LOG_DIR}
 LOG_FILE=${LOG_FILE}
 COUNT_FILE=${COUNT_FILE}
 UNIT_STAGE=${UNIT_STAGE}
@@ -180,11 +180,5 @@ if [[ "${FUNCRUN}" != "" ]]; then
   # set -v
   eval ${FUNCRUN}
   wlog_info "Please check result in $LOG_FILE"
-  # set +v
-# else
-
-#   #  svg_create_vg "${LUNS}" ${METADATA_SIZE}
-#   #  svg_test_lv_multi_pool $active
-#   #  svg_del_all
-#   svg_test_lv_multi_pool
+  
 fi

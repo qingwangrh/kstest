@@ -15,6 +15,13 @@ function wlog_set_log() {
   }
 
 }
+function wlog_rotate_log() {
+  # logfile rotate
+  mv $LOG_FILE "$LOG_FILE.$(date '+%m-%d-%H:%M:%S')"
+  
+  echo "" >${LOG_FILE}
+  
+}
 
 function wlog_color() {
   printf "$1"
@@ -146,7 +153,7 @@ svg_cmd_warn() {
   return $ret
 }
 
-svg_create_vg() {
+svg_vg_create() {
   local OPT OPTARG OPTIND
   local usage vgname devs metadatasize opts
   usage="${FUNCNAME} <-v vgname> <-d LUNS> [-o opts] [-m metadatasize]"
@@ -197,7 +204,7 @@ svg_create_vg() {
 
 }
 
-svg_del_vg() {
+svg_vg_remove() {
   local OPT OPTARG OPTIND
   local usage vgname devs dev
   usage="${FUNCNAME} <-v vgname> "
@@ -250,7 +257,7 @@ svg_del_vg() {
 
 }
 
-svg_del_lvs() {
+svg_lv_remove() {
 
   local OPT OPTARG OPTIND
   local usage vgname lvname poolname
@@ -300,7 +307,8 @@ svg_del_lvs() {
 _write_stg_file() {
   # write stage result into file
   # usage: time funcname
-  local file=${LOG_FOLDER}/$2_${TEST_NAME}.stg
+  #multi-node env dont care the vgname 
+  local file=${LOG_DIR}/$2_${TEST_NAME}.stg
   local curren_time last_time
   current_time=$(date +%s)
   if [ -e $file ]; then
@@ -314,7 +322,8 @@ _write_stg_file() {
 
 _write_time_file() {
   # usage: time funcname
-  local file="${LOG_FOLDER}/$2_$vgname_${WORKER}_${num}_${start}-$((start + num)).time"
+  echo "x:${vgname}"
+  local file="${LOG_DIR}/$2_${vgname}_${WORKER}_${num}_${start}-$((start + num)).time"
   svg_cmd "echo $1 : $(date '+%m-%d %H:%M:%S') > $file"
 }
 
@@ -437,7 +446,7 @@ svg_loop_test() {
   num=${num:-$NUM_LV}
   start=${start:-0}
   reset_count=${reset_count:-0}
-  count_file=${count_file:-${LOG_FOLDER}/${funcname}.idx}
+  count_file=${count_file:-${LOG_DIR}/${funcname}.idx}
   unit_stage=${unit_stage:-${UNIT_STAGE}}
   opts=${opts:-""}
 
@@ -459,7 +468,7 @@ svg_loop_test() {
     g_idx=$(cat ${count_file})
     svg_cmd "echo $((g_idx + 1)) > ${count_file};"
     cmd="$(eval echo $action)"
-    svg_cmd_warn "${cmd}"
+    svg_cmd_warn "${cmd}" "${funcname}"
     [ $? == 0 ] || ((err_count++))
     ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${funcname}
   done
@@ -557,7 +566,7 @@ svg_lv_extend() {
 
 # }
 
-svg_del_all() {
+svg_remove_all() {
   local OPT OPTARG OPTIND
   local usage vgname devs dev
   usage="${FUNCNAME} <-v vgname> "
@@ -580,11 +589,11 @@ svg_del_all() {
     wlog_error "${usage}, Miss parameter !"
     return 1
   fi
-  svg_del_lvs -v ${vgname}
-  svg_del_vg -v ${vgname}
+  svg_lv_remove -v ${vgname}
+  svg_vg_remove -v ${vgname}
 }
 
-svg_reset_vg() {
+svg_vg_reset() {
   local OPT OPTARG OPTIND
   local usage vgname devs dev
   usage="${FUNCNAME} <-v vgname> [-d devs]"
@@ -610,8 +619,8 @@ svg_reset_vg() {
     wlog_error "${usage}, Miss parameter !"
     return 1
   fi
-  svg_del_vg -v ${vgname}
-  svg_create_vg -v ${vgname} -d "$devs"
+  svg_vg_remove -v ${vgname}
+  svg_vg_create -v ${vgname} -d "$devs"
 }
 
 svg_prune_vg() {
