@@ -152,9 +152,9 @@ COUNT_FILE=${COUNT_FILE:-"${LOG_DIR}/main.idx"}
 
 if [ ! -e ${LOG_FILE} ]; then
   touch ${LOG_FILE}
-  wlog_info "Hello, ${TESTNAME} ${LOG_FILE}"
+  kslog_info "Hello, ${TESTNAME} ${LOG_FILE}"
 
-  wlog_info "
+  kslog_info "
 LUNS=${LUNS}
 NUM_LV=${NUM_LV}
 NUM_VG=${NUM_VG}
@@ -176,9 +176,9 @@ UNIT_STAGE=${UNIT_STAGE}
 fi
 
 if [[ "${FUNCRUN}" != "" ]]; then
-  wlog_info "Run ${FUNCRUN}"
+  kslog_info "Run ${FUNCRUN}"
   # set -v
   eval ${FUNCRUN}
-  wlog_info "Please check result in $LOG_FILE"
+  kslog_info "Please check result in $LOG_FILE"
   
 fi

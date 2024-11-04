@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 DISABLE_COLOR='\033[0m' # Disable Color
 
-function wlog_set_log() {
+function kslog_set_log() {
   # parameter: logfile reset
   LOG_FILE=$1
   # empty log
@@ -15,7 +15,7 @@ function wlog_set_log() {
   }
 
 }
-function wlog_rotate_log() {
+function kslog_rotate_log() {
   # logfile rotate
   mv $LOG_FILE "$LOG_FILE.$(date '+%m-%d-%H:%M:%S')"
   
@@ -23,23 +23,23 @@ function wlog_rotate_log() {
   
 }
 
-function wlog_color() {
+function kslog_color() {
   printf "$1"
   shift
   printf "$(date '+%m-%d %H:%M:%S') | $*\n" | tee -a ${LOG_FILE}
   printf "${DISABLE_COLOR}"
 }
 
-function wlog_error {
-  wlog_color "${RED}" "$@"
+function kslog_error {
+  kslog_color "${RED}" "$@"
 }
 
-function wlog_info {
-  wlog_color "${GREEN}" "$@"
+function kslog_info {
+  kslog_color "${GREEN}" "$@"
 }
 
-function wlog_warn {
-  wlog_color "${YELLOW}" "$@"
+function kslog_warn {
+  kslog_color "${YELLOW}" "$@"
 }
 
 function _exit_on_error() {
@@ -49,7 +49,7 @@ function _exit_on_error() {
   # set -xv
   if [ $1 -ne 0 ]; then
     shift
-    wlog_error "$@"
+    kslog_error "$@"
     echo "--$owner $ret"
     if [[ "$owner" == "-bash" ]]; then
       return $ret
@@ -63,12 +63,12 @@ function _exit_on_error() {
 function _warn_on_error() {
   if [ $1 -ne 0 ]; then
     shift
-    wlog_warn "$@"
+    kslog_warn "$@"
   fi
 }
 
 svg_version() {
-  wlog_info "$({
+  kslog_info "$({
     cat /etc/redhat-release
     uname -r
     rpm -q lvm2
@@ -117,16 +117,16 @@ root@dell-per750-15 /home $ cat  /etc/lvm/devices/myvg
 svg_cmd_time() {
   local start_time end_time
   start_time=$(date +%s)
-  wlog_info "CMD: $1"
+  kslog_info "CMD: $1"
   eval "$1"
   ret=$?
   end_time=$(date +%s)
-  wlog_info "Time $2: $((end_time - start_time)) "
+  kslog_info "Time $2: $((end_time - start_time)) "
   return $ret
 }
 
 svg_cmd() {
-  wlog_info "CMD: $@"
+  kslog_info "CMD: $@"
   eval "$@"
   ret=$?
   return $ret
@@ -139,7 +139,7 @@ svg_cmd_exit() {
   _exit_on_error $ret "$@"
   return $ret
   # if [ $ret -ne 0 ]; then
-  #   wlog_error "Error($ret) on $@"
+  #   kslog_error "Error($ret) on $@"
   #   exit $ret
   # fi
 }
@@ -148,7 +148,7 @@ svg_cmd_warn() {
   svg_cmd_time "$@"
   ret=$?
   if [ $ret -ne 0 ]; then
-    wlog_warn "Error($ret) on $@"
+    kslog_warn "Error($ret) on $@"
   fi
   return $ret
 }
@@ -173,7 +173,7 @@ svg_vg_create() {
       opts="$OPTARG"
       ;;
     ? | h)
-      wlog_error ${usage}
+      kslog_error ${usage}
       return 1
       ;;
     esac
@@ -184,12 +184,12 @@ svg_vg_create() {
   metadatasize=${metadatasize:-${METADATA_SIZE}}
 
   if [ -z "${vgname}" ] || [ -z "${devs}" ]; then
-    wlog_error "${usage}, Miss parameter !"
+    kslog_error "${usage}, Miss parameter !"
     return 1
   fi
 
   if vgs --devicesfile $vgname $vgname; then
-    wlog_warn "Already exist $vgname,skip creating $vgname"
+    kslog_warn "Already exist $vgname,skip creating $vgname"
     return
   fi
   for dev in ${devs}; do
@@ -215,7 +215,7 @@ svg_vg_remove() {
       vgname="$OPTARG"
       ;;
     ? | h)
-      wlog_error ${usage}
+      kslog_error ${usage}
       return 1
       ;;
     esac
@@ -224,7 +224,7 @@ svg_vg_remove() {
   vgname=${vgname:-${VG_NAME}}
 
   if [ -z "${vgname}" ]; then
-    wlog_error "${usage}, Miss parameter !"
+    kslog_error "${usage}, Miss parameter !"
     return 1
   fi
 
@@ -239,12 +239,12 @@ svg_vg_remove() {
     #     svg_cmd_warn "vgchange --lockstop --devicesfile $vgname"
     #    fi
   else
-    wlog_warn "VG ${vgname} NOT found"
+    kslog_warn "VG ${vgname} NOT found"
     return 1
   fi
 
   if [[ "$devs" != "" ]]; then
-    wlog_info $devs
+    kslog_info $devs
     for dev in ${devs}; do
       svg_cmd_warn "lvmdevices --deldev $dev"
       svg_cmd_warn "lvmdevices --devicesfile $vgname --deldev $dev"
@@ -275,7 +275,7 @@ svg_lv_remove() {
       poolname="$OPTARG"
       ;;
     ? | h)
-      wlog_error ${usage}
+      kslog_error ${usage}
       return 1
       ;;
     esac
@@ -286,11 +286,11 @@ svg_lv_remove() {
   poolname=${poolname:-${POOL_NAME}}
 
   if [ -z "${vgname}" ] || [ -z "${lvname}" ] || [ -z "${poolname}" ]; then
-    wlog_error "${usage}, Miss parameter !"
+    kslog_error "${usage}, Miss parameter !"
     return 1
   fi
 
-  wlog_info "Ready delete ${lvname} and ${poolname} in ${vgname}"
+  kslog_info "Ready delete ${lvname} and ${poolname} in ${vgname}"
   mylvs=$(lvs --devicesfile $vgname | awk '{print $1}' | grep -E ${lvname}-[0-9]*)
   for mylv in $mylvs; do
     #svg_cmd_exit "lvchange -an --devicesfile $vgname -f $vgname/$mylv"
@@ -356,7 +356,7 @@ _write_time_file() {
 #       unit_stage="$OPTARG"
 #       ;;
 #     ? | h)
-#       wlog_error ${usage}
+#       kslog_error ${usage}
 #       return 1
 #       ;;
 #     esac
@@ -371,7 +371,7 @@ _write_time_file() {
 #   opts=${opts:-"-ay"}
 
 #   if [ -z "${vgname}" ] || [ -z "${num}" ] || [ -z "${count_file}" ]; then
-#     wlog_error "${usage}, Miss parameter !"
+#     kslog_error "${usage}, Miss parameter !"
 #     return 1
 #   fi
 
@@ -379,7 +379,7 @@ _write_time_file() {
 #     svg_cmd_exit "echo 0 > ${count_file}"
 #   fi
 
-#   wlog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
+#   kslog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
 #   start_time=$(date +%s)
 #   err_count=0
 #   for ((i = 0; i < num; i++)); do
@@ -394,7 +394,7 @@ _write_time_file() {
 #   t=$((end_time - start_time))
 #   _write_time_file $t ${FUNCNAME}
 #   _write_stg_file $g_idx ${FUNCNAME}
-#   wlog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
+#   kslog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
 
 # }
 
@@ -434,7 +434,7 @@ svg_loop_test() {
       unit_stage="$OPTARG"
       ;;
     ? | h)
-      wlog_error ${usage}
+      kslog_error ${usage}
       return 1
       ;;
     esac
@@ -450,9 +450,9 @@ svg_loop_test() {
   unit_stage=${unit_stage:-${UNIT_STAGE}}
   opts=${opts:-""}
 
-  wlog_info "action:$action"
+  kslog_info "action:$action"
   if [ -z "${vgname}" ] || [ -z "${num}" ] || [ -z "${count_file}" ]; then
-    wlog_error "${usage}, Miss parameter !"
+    kslog_error "${usage}, Miss parameter !"
     return 1
   fi
 
@@ -460,7 +460,7 @@ svg_loop_test() {
     svg_cmd_exit "echo 0 > ${count_file}"
   fi
 
-  wlog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
+  kslog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
   start_time=$(date +%s)
   err_count=0
   for ((i = 0; i < num; i++)); do
@@ -476,7 +476,7 @@ svg_loop_test() {
   t=$((end_time - start_time))
   _write_time_file $t ${funcname}
   _write_stg_file $g_idx ${funcname}
-  wlog_info "Loop end ${funcname} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
+  kslog_info "Loop end ${funcname} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
   return $((err_count == 0 ? 0 : 1))
 
 }
@@ -524,7 +524,7 @@ svg_lv_extend() {
 #       unit_stage="$OPTARG"
 #       ;;
 #     ? | h)
-#       wlog_error ${usage}
+#       kslog_error ${usage}
 #       return 1
 #       ;;
 #     esac
@@ -539,7 +539,7 @@ svg_lv_extend() {
 #   opts=${opts:-"-ay"}
 
 #   if [ -z "${vgname}" ] || [ -z "${num}" ] || [ -z "${count_file}" ]; then
-#     wlog_error "${usage}, Miss parameter !"
+#     kslog_error "${usage}, Miss parameter !"
 #     return 1
 #   fi
 
@@ -547,7 +547,7 @@ svg_lv_extend() {
 #     svg_cmd_exit "echo 0 > ${count_file}"
 #   fi
 
-#   wlog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
+#   kslog_info "Loop begin ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start}"
 #   start_time=$(date +%s)
 #   err_count=0
 #   for ((i = 0; i < num; i++)); do
@@ -562,7 +562,7 @@ svg_lv_extend() {
 #   t=$((end_time - start_time))
 #   _write_time_file $t ${FUNCNAME}
 #   _write_stg_file $g_idx ${FUNCNAME}
-#   wlog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
+#   kslog_info "Loop end ${FUNCNAME} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
 
 # }
 
@@ -577,7 +577,7 @@ svg_remove_all() {
       vgname="$OPTARG"
       ;;
     ? | h)
-      wlog_error ${usage}
+      kslog_error ${usage}
       return 1
       ;;
     esac
@@ -586,7 +586,7 @@ svg_remove_all() {
   vgname=${vgname:-${VG_NAME}}
 
   if [ -z "${vgname}" ]; then
-    wlog_error "${usage}, Miss parameter !"
+    kslog_error "${usage}, Miss parameter !"
     return 1
   fi
   svg_lv_remove -v ${vgname}
@@ -607,7 +607,7 @@ svg_vg_reset() {
       devs="$OPTARG"
       ;;
     ? | h)
-      wlog_error ${usage}
+      kslog_error ${usage}
       return 1
       ;;
     esac
@@ -616,7 +616,7 @@ svg_vg_reset() {
   vgname=${vgname:-${VG_NAME}}
 
   if [ -z "${vgname}" ]; then
-    wlog_error "${usage}, Miss parameter !"
+    kslog_error "${usage}, Miss parameter !"
     return 1
   fi
   svg_vg_remove -v ${vgname}
