@@ -3,9 +3,9 @@ Kubesan test
 
 
 
-./svg_test.sh <-t testname> <-v vgname> <-d devname> [-r log rootdir] 
- \[-w worker] [-n lvnum ] [-u stage unit]
- \[-i] [-s lvsize ]    [-e function]
+./svg_test.sh <-t testname> <-v vgname> <-d devname> 
+ [-r log rootdir] [-w worker] [-n lvnum ]
+ [-u stage unit]  [-s lvsize] [-i] [-e function]
 
 
 -t testname: The test name, log file and count file can be generated with this.
