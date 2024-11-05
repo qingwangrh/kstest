@@ -1,19 +1,19 @@
 # kstest
-Kubesan test
+## Kubesan test
 
-
-
+### Usage
+<pre>
 ./svg_test.sh <-t testname> <-v vgname> <-d devname> 
- [-r log rootdir] [-w worker] [-n lvnum ]
- [-u stage unit]  [-s lvsize] [-i] [-e function]
+ [ -r log rootdir] [-w worker] [-n lvnum ]
+ [ -u stage unit]  [-s lvsize] [-i] [-e function]
 
-
+#####################
 -t testname: The test name, log file and count file can be generated with this.
 -v vgname  : The VG name for testing.
 -d devname : The LNU devices name.
 -r logrootdir: The root path of log files. if no logdir defined, this vaule
                may help to build logdir.
-========================
+####################
 -l logdir : The path of log files. It can be build by log rootdir 
             if it is not specified. 
 -w worker  : The worker node name. It helps to distinguish host resource
@@ -30,10 +30,11 @@ Example :
  ./svg_test.sh -t lvcreate -e "svg_lv_create  -v ksvg1 -n 2000 -s 0 -o '-an' -u 1000"
  ./svg_test.sh -t lvchange -e "svg_lv_change  -v ksvg1 -n 2000 -s 0 -o '-ay' -u 1000"
  ./svg_test.sh -t lvextend -e "svg_lv_extend  -v ksvg1 -n 2000 -s 0  -u 1000"
-
-
+</pre>
+***
+### Result Analysis
 After test finish, you may run the sctipt to get result
 
 ./svg_data_analysis.sh $TEST_NAME [logdir]
 
-
+***
