@@ -1,15 +1,16 @@
 #!/bin/bash
 
-#login https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com/ to get token
-# replace with your 
+# Login https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com/ to get token
+# Replace with your CI_TOKEN
 export CI_TOKEN='sha256~AwV5lO8tKMOwoH-L2_TL7iLX6pEuG7i_lScjcnVwLUw' # notsecret
 
 
 export WORKING_DIR=/home/ocp
-#login https://quay.io/repository/openshift-release-dev/ocp-release?tab=tags&tag=latest
+# Login https://quay.io/repository/openshift-release-dev/ocp-release?tab=tags&tag=latest
+
 export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.17.2-multi
-# Customize cluster. optional
-export CLUSTER_NAME="vc"
+# Replace with your cluster and domain.
+export CLUSTER_NAME="wqvc"
 export BASE_DOMAIN="ocp.vm"
 
 # Network config

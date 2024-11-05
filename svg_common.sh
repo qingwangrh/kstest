@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# if [ -n "$SVG_COMMON_SOURCED" ]; then
+#   return
+# fi
+# echo "Enter $0"
+# export SVG_COMMON_SOURCED=1
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -15,12 +21,42 @@ function kslog_set_log() {
   }
 
 }
+function kslog_get_log() {
+  return ${LOG_FILE}
+}
+
 function kslog_rotate_log() {
   # logfile rotate
-  mv $LOG_FILE "$LOG_FILE.$(date '+%m-%d-%H:%M:%S')"
-  
-  echo "" >${LOG_FILE}
-  
+  file=${1:-$LOG_FILE}
+  if [ -e ${file} ]; then
+    local fname fdir stamp sptfile record
+    fname=$(basename ${file})
+    fdir=$(dirname ${file})
+    stamp=$(date '+%m-%d-%H:%M:%S')
+    sptfile="${fdir}/$fname.$stamp.part"
+    record="${fdir}/$fname.spt"
+    echo "$sptfile" | tee -a ${record}
+    mv ${file} "$sptfile"
+    echo "" >${file}
+  fi
+
+}
+function kslog_merge_log() {
+  # logfile rotate
+  file=${1:-$LOG_FILE}
+  if [ -e ${file} ]; then
+    local fname fdir stamp sptfile record
+    fname=$(basename ${file})
+    fdir=$(dirname ${file})
+    record="${fdir}/$fname.spt"
+    if [ -e ${record} ]; then
+      cat $(cat ${record}) ${file} >/tmp/${fname}
+      mv "${file}" "${file}.$(date '+%m-%d-%H:%M:%S').sav"
+      mv /tmp/${fname} "${file}"
+      mv ${record} ${record}.sav
+    fi
+  fi
+
 }
 
 function kslog_color() {
@@ -307,7 +343,7 @@ svg_lv_remove() {
 _write_stg_file() {
   # write stage result into file
   # usage: time funcname
-  #multi-node env dont care the vgname 
+  #multi-node env dont care the vgname
   local file=${LOG_DIR}/$2_${TEST_NAME}.stg
   local curren_time last_time
   current_time=$(date +%s)
@@ -322,11 +358,29 @@ _write_stg_file() {
 
 _write_time_file() {
   # usage: time funcname
-  echo "x:${vgname}"
   local file="${LOG_DIR}/$2_${vgname}_${WORKER}_${num}_${start}-$((start + num)).time"
   svg_cmd "echo $1 : $(date '+%m-%d %H:%M:%S') > $file"
 }
 
+_write_error_file() {
+  # usage: wrong_cmd
+  local file="${LOG_DIR}/$2_${TEST_NAME}.err"
+  svg_cmd "echo $1  > $file"
+}
+
+_write_rotate_file() {
+  ENABLE_RORATE=1
+  if [ -n "${ENABLE_RORATE}" ]; then
+    kslog_rotate_log
+  fi
+}
+
+_hande_stage() {
+  if ((g_idx % unit_stage == 0)); then
+    _write_stg_file $g_idx ${funcname}
+    _write_rotate_file
+  fi
+}
 # svg_create_lv() {
 #   local OPT OPTARG OPTIND
 #   local usage vgname num start reset_count count_file opts
@@ -386,7 +440,7 @@ _write_time_file() {
 #     idx=$((start + i))
 #     g_idx=$(cat ${count_file})
 #     svg_cmd "echo $((g_idx + 1)) > ${count_file};"
-#     svg_cmd_warn "lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}"
+#     svg_cmd_warn "lvcreate -L ${SIZE_LV}M -V ${SIZE_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}"
 #     [ $? == 0 ] || ((err_count++))
 #     ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${FUNCNAME}
 #   done
@@ -469,20 +523,25 @@ svg_loop_test() {
     svg_cmd "echo $((g_idx + 1)) > ${count_file};"
     cmd="$(eval echo $action)"
     svg_cmd_warn "${cmd}" "${funcname}"
-    [ $? == 0 ] || ((err_count++))
-    ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${funcname}
+    if [ $? != 0 ]; then
+      ((err_count++))
+      _write_error_file "$cmd"
+    fi
+    _hande_stage
   done
   end_time=$(date +%s)
   t=$((end_time - start_time))
   _write_time_file $t ${funcname}
-  _write_stg_file $g_idx ${funcname}
+  # refresh to check last
+  g_idx=$(cat ${count_file})
+  _hande_stage
   kslog_info "Loop end ${funcname} on ${WORKER} ${vgname} ${num} ${start} Time: $t Err:$err_count"
   return $((err_count == 0 ? 0 : 1))
 
 }
 
 svg_lv_create() {
-  action='lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}'
+  action='lvcreate -L ${SIZE_LV}M -V ${SIZE_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}'
   svg_loop_test -f lvcreate -a "$action" $@
 }
 
@@ -554,7 +613,7 @@ svg_lv_extend() {
 #     idx=$((start + i))
 #     g_idx=$(cat ${count_file})
 #     svg_cmd "echo $((g_idx + 1)) > ${count_file};"
-#     svg_cmd_warn "lvcreate -L ${UNIT_LV}M -V ${UNIT_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}"
+#     svg_cmd_warn "lvcreate -L ${SIZE_LV}M -V ${SIZE_POOL}M -n ${LV_NAME}-${idx} --thinpool ${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname} ${vgname}"
 #     [ $? == 0 ] || ((err_count++))
 #     ((g_idx % unit_stage == 0)) && _write_stg_file $g_idx ${FUNCNAME}
 #   done

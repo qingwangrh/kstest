@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Create multiple files with labels
+      # async: 3600
+      poll: 0
+      shell: >
+        touch /tmp/{{ item }} &&
+        sleep 3
+      loop:
+        - file1.txt
+        - file2.txt
+        - file3.txt
+      loop_control:
+        label: "{{ item }}"
+
