@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test result analysis and log merge 
+# Test result analysis and log merge
 set -e
 
 WORK_PATH=$(dirname "${BASH_SOURCE[0]}")
@@ -24,25 +24,33 @@ result=$LOG_DIR/${TEST_NAME}.result
 ###############################
 
 cmd="cat ${LOG_DIR}/*.time|awk '{print \$1}'|awk '{sum += \$1} END {print sum}'"
-echo "$cmd"
+# echo "$cmd"
 total=$(eval "$cmd")
-cat ${LOG_DIR}/*.time|tee -a $result
-echo -e "\nTotal of task:$total\n"|tee -a $result
+cat ${LOG_DIR}/*.time | tee -a $result
+echo -e "\nTotal of task:$total\n" | tee -a $result
 
+cmd="cat ${LOG_DIR}/*.time|awk '{print \$1}'|sort -g"
+# echo "$cmd"
 
+max=$(eval "$cmd|tail -n 1")
+min=$(eval "$cmd|head -n 1")
 
-cmd="cat ${LOG_DIR}/*.time|awk '{print \$1}'|sort|tail -n 1"
-echo "$cmd"
-max=$(eval "$cmd")
-echo -e "\nMax of task:$max\n"|tee -a $result
-
+echo -e "Mininum time of task:$min" | tee -a $result
+echo -e "Maxinum time of task:$max\n" | tee -a $result
 
 cmd="cat ${LOG_DIR}/*.stg|awk -F : '{print \$3}'|awk '{sum += \$1} END {print sum}'"
-echo "$cmd"
+# echo "$cmd"
 total=$(eval "$cmd")
-cat ${LOG_DIR}/*.stg|tee -a $result
-echo -e "\nTotal of stage:$total\n"|tee -a $result
+cat ${LOG_DIR}/*.stg | tee -a $result
+echo -e "\nTotal of stage:$total\n" | tee -a $result
 
-echo "log merge"
+echo "Log Merge"
 kslog_merge_log ${LOG_FILE}
-echo "over"
+
+err=0
+if [ -e ${LOG_DIR}/*.err ]; then
+    err=$(cat ${LOG_DIR}/*.err | wc -l)
+fi
+echo -e "\nTotal of error: $err\n" | tee -a $result
+echo "Bye !"
+exit $((err==0?0:1))

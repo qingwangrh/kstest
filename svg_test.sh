@@ -181,5 +181,4 @@ if [[ "${FUNCRUN}" != "" ]]; then
   # set -v
   eval ${FUNCRUN}
   kslog_info "Please check result in $LOG_FILE"
-
 fi

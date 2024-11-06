@@ -33,7 +33,7 @@ Example :
 </pre>
 ***
 ### Result Analysis
-After test finish, you may run the sctipt to get result
+After test finish, you may run the script to get result
 
 ./svg_data_analysis.sh $TEST_NAME [logdir]
 
