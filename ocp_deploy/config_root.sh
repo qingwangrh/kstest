@@ -2,7 +2,7 @@
 
 # Login https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com/ to get token
 # Replace with your CI_TOKEN
-export CI_TOKEN='sha256~AwV5lO8tKMOwoH-L2_TL7iLX6pEuG7i_lScjcnVwLUw' # notsecret
+export CI_TOKEN='This is demo' # notsecret
 
 
 export WORKING_DIR=/home/ocp

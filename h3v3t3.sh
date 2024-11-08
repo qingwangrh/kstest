@@ -10,7 +10,7 @@ TEST_NAME=${1:-"h3v3t3"}
 LOG_ROOTDIR=/home/vwrepo/kslog
 LOG_DIR=${LOG_DIR:-${LOG_ROOTDIR}/${TEST_NAME}}
 LOG_FILE=${LOG_FILE:-"${LOG_DIR}/main.log"}
-rest=${2:-"1"}
+rest=${2:-"0"}
 number=${3:-2000}
 ###################
 vgs=(ksvg1 ksvg2 ksvg3)
@@ -24,6 +24,8 @@ if [ "$rest" == "1" ]; then
         ./svg_test.sh -e "svg_vg_create -v ${vgs[$i]} -d ${luns[$i]}"
     done
 fi
+# create vgs on one host
+# other host run vgchange --lockstart  
 ###################
 rm ${LOG_DIR} -rf
 for ((i = 0; i < 3; i++)); do

@@ -16,12 +16,12 @@ if [ "$rest" == "1" ]; then
 fi
 
 ###################
-
+rm $LOG_ROOTDIR -rf
 for ((i = 0; i < 6; i++)); do
     start=$((i * 1000))
-    ./svg_test.sh -r ${LOG_ROOTDIR} -t create -e "svg_lv_create -v ksvg1 -n 1000 -s $start -o '-an'"
-    ./svg_test.sh -r ${LOG_ROOTDIR} -t change -e "svg_lv_change -v ksvg1 -n 1000 -s $start -o '-ay'"
-    ./svg_test.sh -r ${LOG_ROOTDIR} -t extend -e "svg_lv_extend -v ksvg1 -n 1000 -s $start"
+    ./svg_test.sh -r ${LOG_ROOTDIR} -t create -e "svg_lv_create -v ksvg1 -n 1000 -s $start -o '-an' -u 1000"
+    ./svg_test.sh -r ${LOG_ROOTDIR} -t change -e "svg_lv_change -v ksvg1 -n 1000 -s $start -o '-ay' -u 1000"
+    ./svg_test.sh -r ${LOG_ROOTDIR} -t extend -e "svg_lv_extend -v ksvg1 -n 1000 -s $start -u 1000"
 done
 
 

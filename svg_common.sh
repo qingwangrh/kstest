@@ -37,7 +37,8 @@ function kslog_rotate_log() {
     record="${fdir}/$fname.spt"
     echo "$sptfile" | tee -a ${record}
     mv ${file} "$sptfile"
-    echo "" >${file}
+    # clear file with magic code
+    echo "- -- --- ---- ${stamp}" >${file}
   fi
 
 }
@@ -386,7 +387,7 @@ _write_error_file() {
 }
 
 _write_rotate_file() {
-  #handle logfile and 
+  #handle logfile and
   ENABLE_RORATE=1
   if [ -n "${ENABLE_RORATE}" ]; then
     kslog_rotate_log
@@ -446,10 +447,11 @@ svg_loop_test() {
     u)
       unit_stage="$OPTARG"
       ;;
-    ? | h)
+    h)
       kslog_error ${usage}
       return 1
       ;;
+    \?) ;;
     esac
   done
 
@@ -464,6 +466,7 @@ svg_loop_test() {
   opts=${opts:-""}
 
   kslog_info "
+  ${FUNCNAME}
   funcname=${funcname}
   action=${action}
   vgname=${vgname}
@@ -521,11 +524,12 @@ svg_lv_create() {
 
 svg_lv_change() {
   action='lvchange ${vgname}/${LV_NAME}-${idx} ${opts} --devicesfile ${vgname} '
+
   svg_loop_test -f lvchange -a "$action" $@
 }
 
 svg_lv_extend() {
-  action='lvextend -L+100M  ${vgname}/${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname}'
+  action="lvextend -L+10M  "'${vgname}/${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname}'
   svg_loop_test -f lvextend -a "$action" $@
 }
 # svg_change_lv() {

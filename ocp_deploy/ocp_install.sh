@@ -50,9 +50,13 @@ ocp_config_script() {
   else
     git clone https://github.com/openshift-metal3/dev-scripts.git ${script_path}
     local filepath=${1:-$work_path}
-    cp $filepath/config_${USER}.sh ${script_path}/
-    cp $filepath/pull_secret.json ${script_path}/
-    cp $filepath/pull_secret.json ${HOME}/
+    if [ -e $filepath/config_${USER}.sh ]; then
+      yes | cp $filepath/config_${USER}.sh ${script_path}/
+    fi
+    if [-e $filepath/pull_secret.json ]; then
+      yes|cp $filepath/pull_secret.json ${script_path}/
+      yes|cp $filepath/pull_secret.json ${HOME}/
+    fi
     touch /home/dev-scripts/config_script_end
   fi
 }
@@ -114,6 +118,6 @@ if [ "$0" != "-bash" ]; then
   fi
   ocp_config_setup
 else
-  # test function only 
+  # test function only
   echo "Please run ocp_config_setup "
 fi
