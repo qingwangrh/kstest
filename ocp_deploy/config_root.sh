@@ -2,14 +2,16 @@
 
 # Login https://console-openshift-console.apps.ci.l2s4.p1.openshiftapps.com/ to get token
 # Replace with your CI_TOKEN
-export CI_TOKEN='This is demo' # notsecret
+export CI_TOKEN='Demo-Please-replace-it' # notsecret
 
 
 export WORKING_DIR=/home/ocp
-# Login https://quay.io/repository/openshift-release-dev/ocp-release?tab=tags&tag=latest
 
+# Login https://quay.io/repository/openshift-release-dev/ocp-release?tab=tags&tag=latest
+# Replace with test build
 export OPENSHIFT_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.17.2-multi
-# Replace with your cluster and domain.
+
+# Replace with your favorite name or empty.
 export CLUSTER_NAME="wqvc"
 export BASE_DOMAIN="ocp.vm"
 
@@ -20,7 +22,7 @@ export IP_STACK=v4
 
 export NETWORK_TYPE="OVNKubernetes"
 
-# VM Master 2 For low resource 3+ For HA
+# NUM_MASTERS 2+ NUM_WORKERS 0+
 export NUM_MASTERS=2
 export NUM_WORKERS=2
 # 8096 12288 16192 32768 65536
