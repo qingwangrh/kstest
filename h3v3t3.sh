@@ -6,7 +6,8 @@ echo "Test: lvcreate 3 host,3 vg, 3 task, LV 6000"
 echo "Each task handles respective vg"
 echo "You need to open 3 consoles to run commands respectively"
 
-TEST_NAME=${1:-"h3v3t3"}
+stamp=$(date '+%d%H%M')
+TEST_NAME=${1:-"h3v3t3-$stamp"}
 LOG_ROOTDIR=/home/vwrepo/kslog
 LOG_DIR=${LOG_DIR:-${LOG_ROOTDIR}/${TEST_NAME}}
 LOG_FILE=${LOG_FILE:-"${LOG_DIR}/main.log"}
@@ -35,4 +36,5 @@ done
 ###################
 
 echo "./svg_data_analysis.sh $TEST_NAME"
-echo "wbug ks-rhel/$TEST_NAME ${LOG_DIR}/*"
+alianame=$(echo "$TEST_NAME"|cut -f 1 -d "-")
+echo "wbug ks-rhel/$alianame ${LOG_DIR}/*"

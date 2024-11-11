@@ -293,10 +293,11 @@ svg_vg_remove() {
   if [[ "$devs" != "" ]]; then
     kslog_info $devs
     for dev in ${devs}; do
-      svg_cmd_warn "wipefs -a $dev"
-      # optional
+      
+      
       svg_cmd_warn "lvmdevices --deldev $dev"
       svg_cmd_warn "lvmdevices --devicesfile $vgname --deldev $dev"
+      svg_cmd_warn "wipefs -a $dev"
     done
 
     #svg_cmd_warn "yes|pvremove --devicesfile $vgname -ff --config global/use_lvmlockd=0 $dev"
