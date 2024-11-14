@@ -307,7 +307,7 @@ svg_vg_remove() {
 
 }
 
-svg_lv_remove() {
+svg_lv_remove_all() {
 
   local OPT OPTARG OPTIND
   local usage vgname lvname poolname
@@ -364,7 +364,7 @@ _write_stg_file() {
   if [ -e $file ]; then
     last_idx=$(tail -n 1 $file | cut -f 1 -d ":")
     if ((last_idx == $1)); then
-      kslog_warn "Exist same idx, quit."
+      kslog_warn "Exist same idx:$1, quit update stg file."
       return
     fi
     last_time=$(tail -n 1 $file | cut -f 2 -d ":")
@@ -396,6 +396,7 @@ _write_rotate_file() {
 }
 
 _hande_stage() {
+  # only fire on the monitor point
   if ((g_idx % unit_stage == 0)); then
     _write_stg_file $g_idx ${funcname}
     _write_rotate_file
@@ -533,6 +534,12 @@ svg_lv_extend() {
   action="lvextend -L+10M  "'${vgname}/${POOL_NAME}-${idx} ${opts} --devicesfile ${vgname}'
   svg_loop_test -f lvextend -a "$action" $@
 }
+
+svg_lv_remove() {
+  # Time track
+  action='svg_lv_remove_all -v ${vgname} '
+  svg_loop_test -f lvremove -n 1 -u 1 -a "$action" $@
+}
 # svg_change_lv() {
 #   local OPT OPTARG OPTIND
 #   local usage vgname num start reset_count count_file opts
@@ -627,7 +634,7 @@ svg_remove_all() {
     kslog_error "${usage}, Miss parameter !"
     return 1
   fi
-  svg_lv_remove -v ${vgname}
+  svg_lv_remove_all -v ${vgname}
   svg_vg_remove -v ${vgname}
 }
 

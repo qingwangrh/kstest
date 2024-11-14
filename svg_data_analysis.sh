@@ -27,7 +27,7 @@ cmd="cat ${LOG_DIR}/*.time|awk '{print \$1}'|awk '{sum += \$1} END {print sum}'"
 # echo "$cmd"
 total=$(eval "$cmd")
 cat ${LOG_DIR}/*.time | tee -a $result
-echo -e "\nTotal of task:$total\n" | tee -a $result
+echo -e "\nTotal time of tasks:$total\n" | tee -a $result
 
 cmd="cat ${LOG_DIR}/*.time|awk '{print \$1}'|sort -g"
 # echo "$cmd"
@@ -35,14 +35,14 @@ cmd="cat ${LOG_DIR}/*.time|awk '{print \$1}'|sort -g"
 max=$(eval "$cmd|tail -n 1")
 min=$(eval "$cmd|head -n 1")
 
-echo -e "Mininum time of task:$min" | tee -a $result
-echo -e "Maxinum time of task:$max\n" | tee -a $result
+echo -e "Mininum time of tasks:$min" | tee -a $result
+echo -e "Maxinum time of tasks:$max\n" | tee -a $result
 
 cmd="cat ${LOG_DIR}/*.stg|awk -F : '{print \$3}'|awk '{sum += \$1} END {print sum}'"
 # echo "$cmd"
 total=$(eval "$cmd")
 cat ${LOG_DIR}/*.stg | tee -a $result
-echo -e "\nTotal of stage:$total\n" | tee -a $result
+echo -e "\nTotal time of stage:$total\n" | tee -a $result
 
 echo "Log Merge"
 kslog_merge_log ${LOG_FILE}

@@ -5,7 +5,9 @@ source ${WORK_PATH}/svg_common.sh
 
 echo "Test: lvcreate 1 host,1 vg, 1 task, LV 6000"
 
-TEST_NAME=${1:-"combination"}
+stamp=$(date '+%d%H%M')
+TEST_NAME=${1:-"combination-$stamp"}
+
 LOG_ROOTDIR=/home/vwrepo/kslog/${TEST_NAME}
 
 rest=${2:-"1"}
@@ -31,4 +33,8 @@ echo "./svg_test.sh -e \"svg_vg_reset -v ksvg1 -d /dev/sdb\""
 ./svg_data_analysis.sh create ${LOG_ROOTDIR}/create
 ./svg_data_analysis.sh change ${LOG_ROOTDIR}/change
 ./svg_data_analysis.sh extend ${LOG_ROOTDIR}/extend
-echo "wbug ks-rhel/$TEST_NAME/ ${LOG_ROOTDIR}/*"
+
+
+alianame=$(echo "$TEST_NAME"|cut -f 1 -d "-")
+echo "wbug ks-rhel/$alianame ${LOG_DIR}/*"
+

@@ -16,6 +16,7 @@ number=${3:-2000}
 ###################
 if [ "$rest" == "1" ]; then
     #echo host need run
+    :
     ./svg_test.sh -e "svg_vg_create -v ksvg1 -d /dev/sdb "
 fi
 ###################

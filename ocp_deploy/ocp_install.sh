@@ -44,16 +44,19 @@ ocp_config_repo() {
 }
 
 ocp_config_script() {
-
+  local usage="$FUNCNAME config_path"
   if [ -e ${script_path}/config_script_end ]; then
     echo "Exist dev-scripts"
   else
     git clone https://github.com/openshift-metal3/dev-scripts.git ${script_path}
     local filepath=${1:-$work_path}
+    echo "$filepath"
     if [ -e $filepath/config_${USER}.sh ]; then
+      echo "cp $filepath/config_${USER}.sh ${script_path}/"
       yes | cp $filepath/config_${USER}.sh ${script_path}/
     fi
-    if [-e $filepath/pull_secret.json ]; then
+    if [ -e $filepath/pull_secret.json ]; then
+      echo "cp $filepath/pull_secret.json ${script_path}/ "
       yes|cp $filepath/pull_secret.json ${script_path}/
       yes|cp $filepath/pull_secret.json ${HOME}/
     fi
