@@ -86,7 +86,7 @@ ocp_config_setup() {
 
 }
 
-while getopts "fhu:p:" opt; do
+while getopts "fhu:p:c:" opt; do
   case $opt in
   h)
     echo -e "$usage"

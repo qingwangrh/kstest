@@ -239,7 +239,7 @@ svg_vg_create() {
     kslog_warn "Already exist $vgname,skip creating $vgname"
 
   else
-    svg_cmd_exit "vgcreate --shared $vgname ${devs} --config global/sanlock_align_size=2 --metadatasize ${metadatasize} ${opts}"
+    svg_cmd_exit "vgcreate --shared $vgname ${devs} --config global/sanlock_align_size=2 --metadatasize=${metadatasize} ${opts}"
   fi
   svg_cmd_exit "vgchange --devicesfile $vgname --lock-start"
   svg_cmd_exit "vgs --devicesfile $vgname $vgname"
