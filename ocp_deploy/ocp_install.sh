@@ -8,10 +8,11 @@ work_path=$(dirname "${BASH_SOURCE[0]}")
 
 echo "Work path: $work_path"
 
-usage="$0 <-u user> <-p password> [-c config file path] [-f]
+usage="$0 <-u user> <-p password> [-c config file path] [-f] [-a]
 -u|-p:  user name | password for rhsm repo
 -f   : Flag of force build public key, optional.
 -c   : The config_${USER}.sh and pull_secret.json file path
+-a   : Flag of auto execute make in script_path, optional
 "
 
 script_path=/home/dev-scripts
@@ -57,8 +58,8 @@ ocp_config_script() {
     fi
     if [ -e $filepath/pull_secret.json ]; then
       echo "cp $filepath/pull_secret.json ${script_path}/ "
-      yes|cp $filepath/pull_secret.json ${script_path}/
-      yes|cp $filepath/pull_secret.json ${HOME}/
+      yes | cp $filepath/pull_secret.json ${script_path}/
+      yes | cp $filepath/pull_secret.json ${HOME}/
     fi
     touch /home/dev-scripts/config_script_end
   fi
@@ -82,11 +83,15 @@ ocp_config_setup() {
   ocp_config_script $confpath
   ocp_config_pubkey $force
   cd ${script_path}
-  echo "Please copy your pull_secret.json into  ${script_path}"
+  echo "Please copy your pull_secret.json into ${script_path};cd ${script_path};make"
+  if [ "$auto" == "1" ]; then
+    cd ${script_path}
+    make
+  fi
 
 }
 
-while getopts "fhu:p:c:" opt; do
+while getopts "afhu:p:c:" opt; do
   case $opt in
   h)
     echo -e "$usage"
@@ -97,6 +102,9 @@ while getopts "fhu:p:c:" opt; do
     ;;
   f)
     force=1
+    ;;
+  a)
+    auto=1
     ;;
   p)
     password="$OPTARG"
