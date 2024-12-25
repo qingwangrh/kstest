@@ -31,7 +31,7 @@ ocp_config_repo() {
   dnf install -y NetworkManager-initscripts-updown
   dnf install -y go-toolset net-tools bridge-utils
   dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-  dnf install -y ansible
+  dnf install -y ansible kubevirt-virtctl 
   #You need set your own user/password
   if (($# > 1)); then
     subscription-manager register --serverurl=subscription.rhsm.stage.redhat.com:443/subscription --baseurl=https://cdn.redhat.com --username=$1 --password=$2 --auto-attach
